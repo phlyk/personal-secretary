@@ -1,0 +1,13 @@
+{
+	"servers": {
+		"telnyx-mcp": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"telnyx-mcp"
+			],
+			"type": "stdio"
+		}
+	},
+	"inputs": []
+}
