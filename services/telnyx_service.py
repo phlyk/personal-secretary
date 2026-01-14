@@ -1,5 +1,5 @@
 """Telnyx API service for call control and recording management."""
-import telnyx
+from telnyx import Telnyx
 import requests
 from pathlib import Path
 from typing import Optional
@@ -7,7 +7,7 @@ import config
 
 
 # Initialize Telnyx client
-telnyx.api_key = config.TELNYX_API_KEY
+client = Telnyx(api_key=config.TELNYX_API_KEY)
 
 
 def answer_call(call_control_id: str) -> dict:
@@ -21,8 +21,7 @@ def answer_call(call_control_id: str) -> dict:
         Response from Telnyx API
     """
     try:
-        call = telnyx.Call.retrieve(call_control_id)
-        result = call.answer()
+        result = client.calls.actions.answer(call_control_id=call_control_id)
         print(f"[Telnyx] Answered call: {call_control_id}")
         return result
     except Exception as e:
@@ -42,8 +41,10 @@ def play_audio_url(call_control_id: str, audio_url: str) -> dict:
         Response from Telnyx API
     """
     try:
-        call = telnyx.Call.retrieve(call_control_id)
-        result = call.playback_start(audio_url=audio_url)
+        result = client.calls.actions.start_playback(
+            call_control_id=call_control_id,
+            audio_url=audio_url
+        )
         print(f"[Telnyx] Playing audio for call: {call_control_id}")
         return result
     except Exception as e:
@@ -51,9 +52,10 @@ def play_audio_url(call_control_id: str, audio_url: str) -> dict:
         raise
 
 
-def speak_text(call_control_id: str, text: str, voice: str = "female") -> dict:
+def speak_text(call_control_id: str, text: str, voice: str = "male") -> dict:
     """
     Speak text to the caller using text-to-speech.
+    Uses Telnyx TTS with simple voice specification.
     
     Args:
         call_control_id: Unique identifier for the call
@@ -64,8 +66,13 @@ def speak_text(call_control_id: str, text: str, voice: str = "female") -> dict:
         Response from Telnyx API
     """
     try:
-        call = telnyx.Call.retrieve(call_control_id)
-        result = call.speak(payload=text, voice=voice, language="en-US")
+        # Use client.calls.actions.speak() for TTS
+        result = client.calls.actions.speak(
+            call_control_id=call_control_id,
+            payload=text,
+            voice=voice,
+            language="en-US"
+        )
         print(f"[Telnyx] Speaking text for call: {call_control_id}")
         return result
     except Exception as e:
@@ -85,8 +92,8 @@ def start_recording(call_control_id: str, play_beep: bool = True) -> dict:
         Response from Telnyx API
     """
     try:
-        call = telnyx.Call.retrieve(call_control_id)
-        result = call.record_start(
+        result = client.calls.actions.start_recording(
+            call_control_id=call_control_id,
             format="mp3",
             channels="single",
             play_beep=play_beep
@@ -145,8 +152,9 @@ def hangup_call(call_control_id: str) -> dict:
         Response from Telnyx API
     """
     try:
-        call = telnyx.Call.retrieve(call_control_id)
-        result = call.hangup()
+        result = client.calls.actions.hangup(
+            call_control_id=call_control_id
+        )
         print(f"[Telnyx] Hung up call: {call_control_id}")
         return result
     except Exception as e:

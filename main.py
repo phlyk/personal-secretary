@@ -2,11 +2,13 @@
 Personal Secretary - AI Phone Assistant MVP
 Main FastAPI application for handling Telnyx webhooks
 """
+from typing import Dict
 from fastapi import FastAPI, Request, BackgroundTasks, HTTPException
 from fastapi.responses import JSONResponse
 import config
 from handlers import webhook_handler
 from utils import security
+from webhook_models import TelnyxWebhookRequest
 
 
 # Validate configuration on startup
@@ -36,16 +38,42 @@ async def root():
     }
 
 
-@app.post("/webhooks/telnyx")
-async def telnyx_webhook(request: Request, background_tasks: BackgroundTasks):
+@app.post("/webhooks/telnyx", response_model=Dict)
+async def telnyx_webhook(
+    webhook: TelnyxWebhookRequest,
+    request: Request,
+    background_tasks: BackgroundTasks
+):
     """
     Handle incoming Telnyx webhook events.
     
     This endpoint receives call events from Telnyx and processes them accordingly.
     For call.recording.saved events, processing happens in the background.
     
+    Args:
+        webhook: The Telnyx webhook payload (auto-validated by Pydantic)
+        request: The raw FastAPI request (for signature verification)
+        background_tasks: FastAPI background tasks manager
+    
     Returns:
         202 Accepted for successful webhook processing
+    
+    Example webhook payload:
+        ```json
+        {
+          "data": {
+            "event_type": "call.initiated",
+            "id": "...",
+            "occurred_at": "2026-01-14T12:00:00.000Z",
+            "payload": {
+              "call_control_id": "v3:...",
+              "from": "+15551234567",
+              "to": "+15557654321"
+            },
+            "record_type": "event"
+          }
+        }
+        ```
     """
     # Verify webhook signature (skip if configured for development)
     if not security.skip_signature_verification():
@@ -56,11 +84,8 @@ async def telnyx_webhook(request: Request, background_tasks: BackgroundTasks):
             # TODO: Enforce strict verification in production
             print("⚠️  Webhook signature verification failed (continuing anyway for MVP)")
     
-    # Parse webhook data
-    try:
-        event_data = await request.json()
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid JSON: {str(e)}")
+    # Convert Pydantic model to dict for processing
+    event_data = webhook.model_dump(by_alias=True)
     
     # Process webhook
     try:
