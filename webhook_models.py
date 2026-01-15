@@ -3,12 +3,6 @@ from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, Field
 
 
-class TelnyxWebhookMeta(BaseModel):
-    """Metadata about the webhook request."""
-    attempt: Optional[int] = None
-    delivered_to: Optional[str] = None
-
-
 class TelnyxEventPayload(BaseModel):
     """Base payload structure for Telnyx events."""
     call_control_id: Optional[str] = None
@@ -20,6 +14,12 @@ class TelnyxEventPayload(BaseModel):
     to: Optional[str] = None
     direction: Optional[str] = None
     state: Optional[str] = None
+    codec: Optional[str] = None
+    sampling_rate: Optional[int] = None
+    start_time: Optional[str] = None
+    occurred_at: Optional[str] = None
+    calling_party_type: Optional[str] = None
+    custom_headers: Optional[List[Dict[str, str]]] = None
     
     # Recording-specific fields
     recording_id: Optional[str] = None
@@ -33,19 +33,18 @@ class TelnyxEventPayload(BaseModel):
         populate_by_name = True
 
 
-class TelnyxEventData(BaseModel):
-    """The data wrapper for Telnyx events."""
+class TelnyxWebhookRequest(BaseModel):
+    """
+    Telnyx webhook request structure.
+    Matches the actual Telnyx webhook payload format.
+    """
     event_type: str
-    id: str
-    occurred_at: str
     payload: TelnyxEventPayload
     record_type: str = "event"
-
-
-class TelnyxWebhookRequest(BaseModel):
-    """Complete Telnyx webhook request structure."""
-    data: TelnyxEventData
-    meta: Optional[TelnyxWebhookMeta] = None
+    created_at: Optional[str] = None
+    webhook_id: Optional[str] = None
+    occurred_at: Optional[str] = None
+    id: Optional[str] = None
     
     class Config:
         json_schema_extra = {

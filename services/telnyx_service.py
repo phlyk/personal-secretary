@@ -109,20 +109,20 @@ def download_recording(recording_url: str, call_control_id: str) -> Path:
     """
     Download a call recording from Telnyx.
     
+    Telnyx provides pre-signed S3 URLs that already contain authentication
+    in the URL parameters. DO NOT add Authorization headers.
+    
     Args:
-        recording_url: URL of the recording
+        recording_url: Pre-signed S3 URL of the recording
         call_control_id: Unique identifier for the call
         
     Returns:
         Path to the downloaded file
     """
     try:
-        # Make authenticated request to download recording
-        headers = {
-            "Authorization": f"Bearer {config.TELNYX_API_KEY}"
-        }
-        
-        response = requests.get(recording_url, headers=headers, stream=True)
+        # For pre-signed S3 URLs, don't add any auth headers
+        # The signature is already in the URL parameters
+        response = requests.get(recording_url, stream=True)
         response.raise_for_status()
         
         # Save to recordings directory

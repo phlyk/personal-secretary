@@ -19,6 +19,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Server Configuration
 WEBHOOK_PORT = int(os.getenv("WEBHOOK_PORT", "5000"))
+LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG")  # DEBUG, INFO, WARNING, ERROR
 
 # Greeting Configuration
 GREETING_AUDIO_URL = os.getenv("GREETING_AUDIO_URL", "")
