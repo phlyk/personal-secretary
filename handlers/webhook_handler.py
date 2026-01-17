@@ -22,7 +22,9 @@ async def process_telnyx_webhook(event_data: dict, background_tasks: BackgroundT
     Returns:
         Event type that was processed
     """
-    event_type = event_data.get("event_type")
+    # Extract from data wrapper (Telnyx sends: {"data": {"event_type": ..., "payload": ...}, "meta": ...})
+    data = event_data.get("data", {})
+    event_type = data.get("event_type")
     
     if not event_type:
         print("[Webhook] Received event with no event_type")
@@ -30,8 +32,8 @@ async def process_telnyx_webhook(event_data: dict, background_tasks: BackgroundT
     
     print(f"[Webhook] Received event: {event_type}")
     
-    # Extract payload (event_type and payload are at top level in actual Telnyx webhooks)
-    payload = event_data.get("payload", {})
+    # Extract payload (event_type and payload are inside data wrapper)
+    payload = data.get("payload", {})
     call_control_id = payload.get("call_control_id")
     from_number = payload.get("from", "unknown")
     
@@ -44,21 +46,21 @@ async def process_telnyx_webhook(event_data: dict, background_tasks: BackgroundT
             call_logger.debug(f"Webhook Event: {event_type}")
             call_logger.debug(f"Full Payload: {json.dumps(event_data, indent=2)}")
     
-    # Route to appropriate handler
+    # Route to appropriate handler (pass the data object, not the full event_data)
     if event_type == "call.initiated":
-        call_handler.handle_call_initiated(event_data)
+        call_handler.handle_call_initiated(data)
     elif event_type == "call.answered":
-        call_handler.handle_call_answered(event_data)
+        call_handler.handle_call_answered(data)
         
     elif event_type == "call.speak.ended":
-        call_handler.handle_speak_ended(event_data)
+        call_handler.handle_speak_ended(data)
         
     elif event_type == "call.playback.ended":
-        call_handler.handle_playback_ended(event_data)
+        call_handler.handle_playback_ended(data)
         
     elif event_type == "call.recording.saved":
         # Get recording info
-        recording_info = call_handler.handle_recording_saved(event_data)
+        recording_info = call_handler.handle_recording_saved(data)
         
         # Process recording in background
         background_tasks.add_task(
@@ -68,7 +70,7 @@ async def process_telnyx_webhook(event_data: dict, background_tasks: BackgroundT
         print("[Webhook] Recording processing queued in background")
         
     elif event_type == "call.hangup":
-        call_handler.handle_call_hangup(event_data)
+        call_handler.handle_call_hangup(data)
         # Don't cleanup logger yet - wait for recording.saved to complete
         
     else:

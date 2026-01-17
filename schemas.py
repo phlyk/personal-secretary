@@ -3,6 +3,32 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
+class AudioProcessingResponse(BaseModel):
+    """Response from audio processing endpoint."""
+    status: str = Field(..., description="Processing status")
+    transcription: str = Field(..., description="Transcribed text from audio")
+    extracted_info: 'CallInfo' = Field(..., description="Structured information extracted from transcription")
+    timestamp: str = Field(..., description="ISO timestamp of processing")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "status": "success",
+                "transcription": "Hi, this is John. I have a leaking pipe in my kitchen...",
+                "extracted_info": {
+                    "tenant_id": "plumber-solo",
+                    "caller": "John",
+                    "intent": "Request plumbing repair",
+                    "job_type": "leak repair",
+                    "urgency": "high",
+                    "missing_fields": ["address"],
+                    "summary": "Leaking pipe in kitchen, needs urgent repair"
+                },
+                "timestamp": "2026-01-17T12:34:56.789012"
+            }
+        }
+
+
 class CallInfo(BaseModel):
     """Structured information extracted from caller's message."""
     

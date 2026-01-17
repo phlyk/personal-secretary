@@ -3,6 +3,12 @@ from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, Field
 
 
+class TelnyxWebhookMeta(BaseModel):
+    """Metadata about the webhook request."""
+    attempt: Optional[int] = None
+    delivered_to: Optional[str] = None
+
+
 class TelnyxEventPayload(BaseModel):
     """Base payload structure for Telnyx events."""
     call_control_id: Optional[str] = None
@@ -17,9 +23,22 @@ class TelnyxEventPayload(BaseModel):
     codec: Optional[str] = None
     sampling_rate: Optional[int] = None
     start_time: Optional[str] = None
+    end_time: Optional[str] = None
     occurred_at: Optional[str] = None
     calling_party_type: Optional[str] = None
+    caller_id_name: Optional[str] = None
+    connection_codecs: Optional[str] = None
+    from_sip_uri: Optional[str] = None
+    to_sip_uri: Optional[str] = None
+    offered_codecs: Optional[str] = None
     custom_headers: Optional[List[Dict[str, str]]] = None
+    
+    # Hangup fields
+    hangup_cause: Optional[str] = None
+    hangup_source: Optional[str] = None
+    sip_hangup_cause: Optional[str] = None
+    telnyx_error: Optional[str] = None
+    call_quality_stats: Optional[Dict[str, Any]] = None
     
     # Recording-specific fields
     recording_id: Optional[str] = None
@@ -33,18 +52,19 @@ class TelnyxEventPayload(BaseModel):
         populate_by_name = True
 
 
-class TelnyxWebhookRequest(BaseModel):
-    """
-    Telnyx webhook request structure.
-    Matches the actual Telnyx webhook payload format.
-    """
+class TelnyxEventData(BaseModel):
+    """The data wrapper for Telnyx events."""
     event_type: str
+    id: str
+    occurred_at: str
     payload: TelnyxEventPayload
     record_type: str = "event"
-    created_at: Optional[str] = None
-    webhook_id: Optional[str] = None
-    occurred_at: Optional[str] = None
-    id: Optional[str] = None
+
+
+class TelnyxWebhookRequest(BaseModel):
+    """Complete Telnyx webhook request structure."""
+    data: TelnyxEventData
+    meta: Optional[TelnyxWebhookMeta] = None
     
     class Config:
         json_schema_extra = {
