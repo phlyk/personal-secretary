@@ -22,10 +22,9 @@ def transcribe_audio(audio_file_path: Path) -> str:
     try:
         with open(audio_file_path, "rb") as audio_file:
             transcript = client.audio.transcriptions.create(
-                model="whisper-1",
+                model="gpt-4o-transcribe",
                 file=audio_file,
-                language="en",
-                prompt="This is a voicemail message from a customer calling a plumber. They may discuss plumbing issues, repairs, emergencies, or appointment requests."
+                prompt="This is a voicemail message from a customer calling a plumber. They may discuss plumbing issues, repairs, emergencies, or appointment requests. Transcribe in original language."
             )
         
         transcription = transcript.text

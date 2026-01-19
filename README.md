@@ -126,7 +126,20 @@ Results are saved to `output.txt` with this structure:
 ```
 
 ## Next Steps
+### Ultra MVP 
+- [ ] Handle more edge cases (pauses)
+- [ ] Handle French language (duh)
+    - [x] Transcription
+    - [ ] Structured data prompt
+- [ ] Accents and poor quality recordings
+- [ ] Second transcription for redundancy
+- [ ] Ensure final JSON payload is delicious (does it have the person's number)
+- [ ] Look into final translation
+- [ ] Tidy up
+- [ ] Some documentation for non-technical users
+    - [ ] With next steps on where we could go from here
 
+### Beyond
 - [ ] Add database persistence
 - [ ] Build web UI for viewing messages
 - [ ] Implement multi-tenancy
