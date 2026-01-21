@@ -256,7 +256,7 @@ def write_result_to_file(result: CallProcessingResult) -> None:
         result_json = result.model_dump_json(indent=2)
         
         # Append to output file with separator
-        with open(config.OUTPUT_FILE, "a") as f:
+        with open(config.OUTPUT_FILE, "a", encoding="utf-8") as f:
             f.write(f"\n{'='*80}\n")
             f.write(f"Timestamp: {result.timestamp}\n")
             f.write(f"{'='*80}\n")

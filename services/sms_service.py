@@ -1,6 +1,7 @@
 """Telnyx SMS service for sending notifications."""
 from telnyx import Telnyx
 import config
+from services import translation_service
 
 
 # Initialize Telnyx client
@@ -42,7 +43,7 @@ def send_sms(to: str, message: str, from_number: str = None) -> dict:
 
 def format_call_summary_sms(call_info: dict, transcription: str, caller_phone: str) -> str:
     """
-    Format call information into an SMS message.
+    Format call information into an SMS message with French labels.
     
     Args:
         call_info: Extracted call information (CallInfo object dict)
@@ -50,8 +51,11 @@ def format_call_summary_sms(call_info: dict, transcription: str, caller_phone: s
         caller_phone: Caller's phone number
         
     Returns:
-        Formatted SMS message text
+        Formatted SMS message text in French
     """
+    # Get French labels
+    labels = translation_service.get_french_labels()
+    
     urgency_emoji = {
         "emergency": "🚨",
         "urgent": "⚠️",
@@ -59,28 +63,29 @@ def format_call_summary_sms(call_info: dict, transcription: str, caller_phone: s
         "flexible": "📅"
     }
     
-    emoji = urgency_emoji.get(call_info.get("urgency", "normal"), "📞")
+    urgency_value = call_info.get("urgency", "normal").lower()
+    emoji = urgency_emoji.get(urgency_value, "📞")
     
-    # Build SMS message
+    # Build SMS message with French labels, English values
     message_parts = [
-        f"{emoji} NEW VOICEMAIL",
+        f"{emoji} {labels['new_voicemail']}",
         f"",
-        f"From: {call_info.get('caller', 'Unknown')} ({caller_phone})",
-        f"Urgency: {call_info.get('urgency', 'N/A').upper()}",
+        f"{labels['from']}: {call_info.get('caller', 'Unknown')} ({caller_phone})",
+        f"{labels['urgency']}: {call_info.get('urgency', 'N/A').upper()}",
         f"",
-        f"Intent: {call_info.get('intent', 'N/A')}",
+        f"{labels['intent']}: {call_info.get('intent', 'N/A')}",
     ]
     
     if call_info.get("job_type"):
-        message_parts.append(f"Job: {call_info['job_type']}")
+        message_parts.append(f"{labels['job_type']}: {call_info['job_type']}")
     
     if call_info.get("summary"):
         message_parts.append(f"")
-        message_parts.append(f"Summary: {call_info['summary']}")
+        message_parts.append(f"{labels['summary']}: {call_info['summary']}")
     
     if call_info.get("missing_fields"):
         message_parts.append(f"")
-        message_parts.append(f"Missing: {', '.join(call_info['missing_fields'])}")
+        message_parts.append(f"{labels['missing_fields']}: {', '.join(call_info['missing_fields'])}")
     
     # Add truncated transcription if space allows
     message_text = "\n".join(message_parts)

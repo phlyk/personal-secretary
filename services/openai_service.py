@@ -52,6 +52,8 @@ def extract_call_info(transcription: str, phone_number: str = "unknown") -> Call
         system_prompt = """You are an AI assistant helping a busy plumber manage incoming calls.
 Extract key information from voicemail transcriptions in a structured format.
 
+IMPORTANT: Respond in the SAME LANGUAGE as the transcription. If the transcription is in French, respond in French. If it's in English, respond in English.
+
 Focus on:
 - Caller's name (if mentioned, otherwise use phone number)
 - What they want (intent)
@@ -70,7 +72,7 @@ Extract the key information from this voicemail."""
 
         # Use structured output with Pydantic model
         completion = client.beta.chat.completions.parse(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
@@ -80,6 +82,9 @@ Extract the key information from this voicemail."""
         
         # Extract parsed response
         call_info = completion.choices[0].message.parsed
+        
+        if call_info is None:
+            raise ValueError("Failed to parse structured output from model")
         
         # Set tenant_id for MVP
         call_info.tenant_id = "plumber-solo"

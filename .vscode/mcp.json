@@ -7,6 +7,10 @@
 				"telnyx-mcp"
 			],
 			"type": "stdio"
+		},
+		"openaiDeveloperDocs": {
+			"type": "http",
+			"url": "https://developers.openai.com/mcp"
 		}
 	},
 	"inputs": []
