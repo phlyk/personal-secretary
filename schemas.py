@@ -63,6 +63,7 @@ class CallProcessingResult(BaseModel):
     
     call_control_id: str
     recording_id: str
+    caller_phone: str = Field(..., description="Caller's phone number")
     transcription: str
     extracted_info: CallInfo
     timestamp: str

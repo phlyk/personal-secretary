@@ -10,11 +10,9 @@ import logging
 import structlog
 from fastapi import FastAPI, Request, BackgroundTasks, HTTPException, UploadFile, File
 from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
-from starlette.exceptions import HTTPException as StarletteHTTPException
 import config
 from handlers import webhook_handler
-from services import openai_service
+from services import openai_service, sms_service
 from schemas import AudioProcessingResponse
 from utils import security
 from webhook_models import TelnyxWebhookRequest
@@ -217,7 +215,7 @@ async def test_process_audio(
     
     try:
         print(f"\n{'='*60}")
-        print(f"🎤 TEST AUDIO PROCESSING")
+        print("🎤 TEST AUDIO PROCESSING")
         print(f"{'='*60}\n")
         print(f"[Test] Received file: {audio_file.filename}")
         print(f"[Test] Content type: {audio_file.content_type}")
@@ -241,21 +239,21 @@ async def test_process_audio(
         print(f"[Test] File saved: {len(content)} bytes")
         
         # Transcribe audio
-        print(f"[Test] Starting transcription...")
+        print("[Test] Starting transcription...")
         transcription = openai_service.transcribe_audio(temp_file_path)
         print(f"[Test] Transcription complete: {len(transcription)} characters")
         print(f"\n📝 TRANSCRIPTION:\n{transcription}\n")
         
         # Extract structured information
-        print(f"[Test] Extracting structured information...")
+        print("[Test] Extracting structured information...")
         call_info = openai_service.extract_call_info(transcription, "test-caller")
-        print(f"[Test] Extraction complete")
+        print("[Test] Extraction complete")
         
         # Print results
         print(f"\n{'='*60}")
-        print(f"✅ PROCESSING COMPLETE")
+        print("✅ PROCESSING COMPLETE")
         print(f"{'='*60}")
-        print(f"\n📊 EXTRACTED INFORMATION:")
+        print("\n📊 EXTRACTED INFORMATION:")
         print(f"   Caller: {call_info.caller}")
         print(f"   Intent: {call_info.intent}")
         print(f"   Job Type: {call_info.job_type or 'Not specified'}")
@@ -289,6 +287,79 @@ async def test_process_audio(
         pass
 
 
+@app.post("/sms/send")
+async def send_sms_notification(
+    to: str = None,
+    message: str = None
+):
+    """
+    Send an SMS message via Telnyx.
+    
+    Test endpoint for manually sending SMS messages.
+    If no parameters provided, sends a test message to the configured SMS_TO_NUMBER.
+    
+    Args:
+        to: Recipient phone number (E.164 format). Defaults to SMS_TO_NUMBER from config.
+        message: Message text to send. Defaults to a test message.
+    
+    Returns:
+        Status of SMS sending
+    
+    Example:
+        ```bash
+        # Send test message to configured number
+        curl -X POST "http://localhost:8000/sms/send"
+        
+        # Send custom message
+        curl -X POST "http://localhost:8000/sms/send?to=%2B15551234567&message=Hello"
+        ```
+    """
+    try:
+        # Use configured values if not provided
+        recipient = to or config.SMS_TO_NUMBER
+        text = message or "🧪 Test message from Personal Secretary"
+        
+        if not recipient:
+            raise HTTPException(
+                status_code=400,
+                detail="No recipient specified and SMS_TO_NUMBER not configured in .env"
+            )
+        
+        if not config.SMS_FROM_NUMBER:
+            raise HTTPException(
+                status_code=400,
+                detail="SMS_FROM_NUMBER not configured in .env"
+            )
+        
+        logger.info(
+            "sending_sms",
+            to=recipient,
+            from_number=config.SMS_FROM_NUMBER,
+            message_length=len(text)
+        )
+        
+        response = sms_service.send_sms(
+            to=recipient,
+            message=text,
+            from_number=config.SMS_FROM_NUMBER
+        )
+        
+        return {
+            "status": "sent",
+            "to": recipient,
+            "from": config.SMS_FROM_NUMBER,
+            "message": text,
+            "message_id": response.data.id if hasattr(response, 'data') and hasattr(response.data, 'id') else None
+        }
+        
+    except Exception as e:
+        logger.error("sms_send_failed", error=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to send SMS: {str(e)}"
+        )
+
+
 @app.get("/health")
 async def health_check():
     """Detailed health check endpoint."""
@@ -307,7 +378,7 @@ if __name__ == "__main__":
     import uvicorn
     
     print(f"\n{'='*60}")
-    print(f"🚀 Starting Personal Secretary API")
+    print("🚀 Starting Personal Secretary API")
     print(f"{'='*60}\n")
     print(f"Server: http://localhost:{config.WEBHOOK_PORT}")
     print(f"Webhooks: http://localhost:{config.WEBHOOK_PORT}/webhooks/telnyx")

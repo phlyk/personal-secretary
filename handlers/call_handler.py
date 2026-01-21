@@ -97,11 +97,14 @@ def handle_recording_saved(event_data: dict) -> dict:
     print(f"[Call Handler] Recording saved: {recording_id}")
     print(f"[Call Handler] Recording URL: {recording_url}")
     
+    # Get caller phone number from payload (fix: was getting from wrong location)
+    from_number = payload.get("from", "unknown")
+    
     return {
         "recording_url": recording_url,
         "call_control_id": call_control_id,
         "recording_id": recording_id,
-        "from_number": event_data.get("payload", {}).get("from", "unknown")
+        "from_number": from_number
     }
 
 

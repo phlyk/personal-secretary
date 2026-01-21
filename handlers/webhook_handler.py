@@ -2,10 +2,9 @@
 import json
 import time
 from datetime import datetime
-from pathlib import Path
 from fastapi import BackgroundTasks
 from handlers import call_handler
-from services import telnyx_service, openai_service
+from services import telnyx_service, openai_service, sms_service
 from schemas import CallProcessingResult
 from utils.call_logger import get_or_create_logger, cleanup_logger
 import config
@@ -97,7 +96,7 @@ def process_recording(recording_info: dict) -> None:
     
     try:
         print(f"\n{'='*60}")
-        print(f"🎙️  PROCESSING RECORDING")
+        print("🎙️  PROCESSING RECORDING")
         print(f"{'='*60}\n")
         
         call_logger.info("Starting recording processing")
@@ -174,6 +173,7 @@ def process_recording(recording_info: dict) -> None:
         result = CallProcessingResult(
             call_control_id=recording_info["call_control_id"],
             recording_id=recording_info["recording_id"],
+            caller_phone=from_number,
             transcription=transcription,
             extracted_info=call_info,
             timestamp=datetime.now().isoformat()
@@ -181,7 +181,7 @@ def process_recording(recording_info: dict) -> None:
         
         # Log extracted information
         call_logger.info("Extracted Information:")
-        call_logger.info(f"  Caller: {call_info.caller}")
+        call_logger.info(f"  Caller: {call_info.caller} ({from_number})")
         call_logger.info(f"  Intent: {call_info.intent}")
         call_logger.info(f"  Job Type: {call_info.job_type or 'Not specified'}")
         call_logger.info(f"  Urgency: {call_info.urgency}")
@@ -191,10 +191,10 @@ def process_recording(recording_info: dict) -> None:
         
         # Print to stdout
         print(f"\n{'='*60}")
-        print(f"✅ CALL PROCESSING COMPLETE")
+        print("✅ CALL PROCESSING COMPLETE")
         print(f"{'='*60}")
-        print(f"\n📊 EXTRACTED INFORMATION:")
-        print(f"   Caller: {call_info.caller}")
+        print("\n📊 EXTRACTED INFORMATION:")
+        print(f"   Caller: {call_info.caller} ({from_number})")
         print(f"   Intent: {call_info.intent}")
         print(f"   Job Type: {call_info.job_type or 'Not specified'}")
         print(f"   Urgency: {call_info.urgency}")
@@ -206,6 +206,29 @@ def process_recording(recording_info: dict) -> None:
         # Write to output file
         write_result_to_file(result)
         call_logger.success(f"Result written to {config.OUTPUT_FILE}")
+        
+        # Send SMS notification if configured
+        if config.SMS_TO_NUMBER and config.SMS_FROM_NUMBER:
+            try:
+                call_logger.info("Sending SMS notification...")
+                sms_message = sms_service.format_call_summary_sms(
+                    call_info.model_dump(),
+                    transcription,
+                    from_number
+                )
+                sms_service.send_sms(
+                    to=config.SMS_TO_NUMBER,
+                    message=sms_message,
+                    from_number=config.SMS_FROM_NUMBER
+                )
+                call_logger.success(f"SMS sent to {config.SMS_TO_NUMBER}")
+                print(f"\n📱 SMS notification sent to {config.SMS_TO_NUMBER}\n")
+            except Exception as sms_error:
+                call_logger.error(f"Failed to send SMS: {sms_error}")
+                print(f"⚠️  SMS sending failed: {sms_error}")
+        else:
+            call_logger.info("SMS not configured - skipping notification")
+        
         # Cleanup logger after recording processing completes
         cleanup_logger(call_control_id)
         

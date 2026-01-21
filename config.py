@@ -14,6 +14,10 @@ TELNYX_API_KEY = os.getenv("TELNYX_API_KEY")
 TELNYX_PUBLIC_KEY = os.getenv("TELNYX_PUBLIC_KEY")
 CONNECTION_ID = os.getenv("CONNECTION_ID")
 
+# SMS Configuration
+SMS_FROM_NUMBER = os.getenv("SMS_FROM_NUMBER")  # Number to send SMS from
+SMS_TO_NUMBER = os.getenv("SMS_TO_NUMBER")      # Plumber's number to receive notifications
+
 # OpenAI Configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
